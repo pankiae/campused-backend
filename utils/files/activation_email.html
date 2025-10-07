@@ -1,0 +1,114 @@
+{# users/templates/users/activation_email.html #}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Activate Your Account</title>
+  <style>
+    /* Reset & container */
+    body {
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    /* Header */
+    .header {
+      background-color: #4caf50;
+      color: #ffffff;
+      text-align: center;
+      padding: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.5px;
+    }
+    /* Body content */
+    .content {
+      padding: 30px;
+      color: #333333;
+      line-height: 1.5;
+    }
+    .content p {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .button-container {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .button {
+      background-color: #4caf50;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 14px 24px;
+      border-radius: 4px;
+      font-size: 16px;
+      display: inline-block;
+    }
+    .button:hover {
+      background-color: #3051af;
+    }
+    .small-text {
+      font-size: 14px;
+      color: #555555;
+    }
+    /* Footer */
+    .footer {
+      background-color: #f4f4f4;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #777777;
+    }
+    /* Responsive */
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100%;
+        margin: 20px auto;
+      }
+      .content {
+        padding: 20px;
+      }
+      .button {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Activate Your Account</h1>
+    </div>
+    <!-- Main body -->
+    <div class="content">
+      <p>Hi {{ name }},</p>
+      <p>
+        Thank you for signing up! Please click the button below to verify your
+        email address and activate your account:
+      </p>
+      <div class="button-container">
+        <a href="{{ activation_url }}" class="button">Activate Account</a>
+      </div>
+      <p class="small-text">
+        This link will expire in 24 hours. If you did not register for an account,
+        you can safely ignore this email.
+      </p>
+    </div>
+    <!-- Footer -->
+    <div class="footer">
+      &copy; {{ current_year }} Creators Paradise. All rights reserved.
+    </div>
+  </div>

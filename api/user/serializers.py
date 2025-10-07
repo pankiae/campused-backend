@@ -32,7 +32,6 @@ class EmailRegistrationSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "email",
-            "phone_number",
             "password",
         ]
         read_only_fields = ["id"]

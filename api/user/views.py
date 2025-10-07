@@ -87,7 +87,7 @@ class SignUPView(GenericAPIView):
         try:
             serializer = self.get_serializer(
                 data=request.data,
-                context={"exclude_fields": ["id", "phone_number"]},
+                context={"exclude_fields": ["id"]},
             )
             serializer.is_valid(raise_exception=True)
             user = (

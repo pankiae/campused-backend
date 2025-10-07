@@ -42,12 +42,12 @@ class EmailRegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(password=password, **validated_data)
         return user
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        exclude_fields = self.context.get("exclude_fields", [])
-        for field in exclude_fields:
-            data.pop(field, None)
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     exclude_fields = self.context.get("exclude_fields", [])
+    #     for field in exclude_fields:
+    #         data.pop(field, None)
+    #     return data
 
 
 class EmailLoginSerializer(serializers.Serializer):

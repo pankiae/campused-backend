@@ -17,11 +17,25 @@ class Provider(Enum):
         return [(i.name, i.value) for i in cls]
 
 
+class Gender(Enum):
+    male = "MALE"
+    female = "FEMALE"
+
+    @classmethod
+    def choices(cls):
+        return [(i.name, i.value) for i in cls]
+
+
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     email = models.EmailField(unique=True)
+    gender = models.CharField(
+        max_length=7, choices=Gender.choices(), default=Gender.male.value
+    )
+    nickname = models.CharField(max_length=10, blank=True)
+    preparing_for = models.CharField(max_length=20, blank=True)
     provider = models.CharField(
         max_length=10,
         choices=Provider.choices(),

@@ -33,8 +33,17 @@ class EmailRegistrationSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "password",
+            "gender",
+            "nickname",
+            "preparing_for",
         ]
         read_only_fields = ["id"]
+
+    def validate_preparing_for(self, value):
+        return value.upper() if value else value
+
+    def validate_gender(self, value):
+        return value.upper() if value else value
 
     def create(self, validated_data):
         # Remove password from validated_data, then call your UserManager.create_user()

@@ -40,7 +40,7 @@ class SignUPView(GenericAPIView):
             existing = User.objects.get(email=email)
         except User.DoesNotExist:
             existing = None
-        print(f"if account {existing= }")
+
         if existing:
             # If already verified → email is taken
             if existing.is_verified:

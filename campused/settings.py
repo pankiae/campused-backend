@@ -63,6 +63,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -153,3 +154,6 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 
 # OPENAI API KEY
 OPENAI_API_KEY = env("OPENAI_API_KEY")
+
+# Frontend URL
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:420")

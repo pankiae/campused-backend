@@ -39,6 +39,10 @@ class EmailRegistrationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id"]
 
+    def validate_email(self, value):
+        # Ensure email is stored in lowercase
+        return value.strip().lower()
+
     def validate_preparing_for(self, value):
         return value.upper() if value else value
 

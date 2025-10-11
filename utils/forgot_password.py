@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
@@ -18,9 +19,9 @@ def send_password_reset_email(user, request):
     token.set_exp(lifetime=timedelta(hours=1))
     token_str = str(token)
 
-    # 2) Build reset link: https://<domain>/api/reset-password/?token=<jwt>
-    reset_path = reverse("reset-password")
-    reset_url = request.build_absolute_uri(f"{reset_path}?token={token_str}")
+    # 2) Build the password-reset URL to be included in the email
+    frontend_url = settings.FRONTEND_URL  # Get the frontend URL from settings
+    reset_url = f"{frontend_url}/reset-password?token={token_str}"
 
     # 3) Prepare context & subject
     subject = "Reset Your Password"

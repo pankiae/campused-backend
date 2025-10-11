@@ -196,6 +196,7 @@ class EmailLoginAPIView(GenericAPIView):
 class GoogleAuthView(GenericAPIView):
     def post(self, request, *args, **kwargs):
         id_token_value = request.data.get("id_token")
+        print("ID Token:", id_token_value)
         if not id_token_value:
             return Response(
                 {"message": "Google ID token is required.", "status": False},
@@ -207,6 +208,7 @@ class GoogleAuthView(GenericAPIView):
             idinfo = google_id_token.verify_oauth2_token(
                 id_token_value, requests.Request(), GOOGLE_CLIENT_ID
             )
+            print("ID Info:", idinfo)
             email = idinfo.get("email")
             name = idinfo.get("name")
             email_verified = idinfo.get("email_verified", False)

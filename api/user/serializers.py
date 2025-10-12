@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import (
     RefreshToken,
 )
 
-from utils.forgot_password import send_password_reset_email
+from utils.auth.forgot_password import send_password_reset_email
 
 User = get_user_model()
 

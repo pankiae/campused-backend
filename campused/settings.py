@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "api.user",
+    "api.channel",
 ]
 
 MIDDLEWARE = [

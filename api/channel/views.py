@@ -105,12 +105,16 @@ class PatchChannelView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get(self, channel_id):
-        return Channel.objects.get(id=channel_id, user=self.request.user)
+    def get(self, request, channel_id):
+        conversation = Channel.objects.get(id=channel_id, user=request.user)
+        return Response(
+            {"conversation": conversation.context},
+            status=status.HTTP_200_OK,
+        )
 
-    def post(self, channel_id):
+    def post(self, request, channel_id):
         try:
-            conversation = Channel.objects.get(id=channel_id, user=self.request.user)
+            conversation = Channel.objects.get(id=channel_id, user=request.user)
         except Channel.DoesNotExist:
             return Response(
                 {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND

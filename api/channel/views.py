@@ -56,7 +56,7 @@ class ChannelView(APIView):
                 print("Extracted text from image:\n", image_transcribe)
                 conversation.append(
                     {
-                        "role": "assistant",
+                        "role": "system",
                         "content": "This is the information that I have extracted from the image that user shared"
                         + image_transcribe,
                     }
@@ -68,7 +68,7 @@ class ChannelView(APIView):
                 print("Extracted text from document:\n", docx_transcribe)
                 conversation.append(
                     {
-                        "role": "assistant",
+                        "role": "system",
                         "content": "This is the information that I have extracted from the document that user shared:\n\n"
                         + docx_transcribe,
                     }
@@ -82,7 +82,9 @@ class ChannelView(APIView):
                 {"role": "assistant", "content": res},
             )
 
-        Channel.objects.create(user=request.user, title="new chat", context=conversation)
+        Channel.objects.create(
+            user=request.user, title="new chat", context=conversation
+        )
         print("Conversation so far:\n", conversation)
 
         return Response(
@@ -110,6 +112,6 @@ class ChannelPatchView(APIView):
         try:
             conversation = Channel.objects.get(id=channel_id, user=self.request.user)
         except Channel.DoesNotExist:
-            return Response({"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        
+            return Response(
+                {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND
+            )

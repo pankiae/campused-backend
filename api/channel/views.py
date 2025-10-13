@@ -113,9 +113,68 @@ class PatchChannelView(APIView):
         )
 
     def post(self, request, channel_id):
+        uploaded_files = request.FILES.getlist("files")
+        query = request.data.get("q")
+        if not uploaded_files and not query:
+            return Response(
+                {"error": "No files or query provided"}, status=400
+            )  # 400 Bad Request
         try:
-            conversation = Channel.objects.get(id=channel_id, user=request.user)
+            channel = Channel.objects.get(id=channel_id, user=request.user)
+            conversation = channel.context
         except Channel.DoesNotExist:
             return Response(
                 {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+        for file in uploaded_files:
+            if file.content_type not in ALLOWED_TYPES:
+                return Response(
+                    {"error": f"File type {file.content_type} not allowed"}, status=400
+                )
+
+            ext = os.path.splitext(file.name)[1].lower().strip(".")
+            print(f"Processing file: {file.name} with extension: {ext}")
+
+            if ext in ["jpg", "jpeg", "png", "webp"]:
+                print("Processing image file:", file.name)
+                image_transcribe: str = image_analyze.image_analyze(file)
+                print("Extracted text from image:\n", image_transcribe)
+                conversation.append(
+                    {
+                        "role": "system",
+                        "content": "This is the information that I have extracted from the image that user shared"
+                        + image_transcribe,
+                    }
+                )
+
+            elif ext in ["docx", "pdf"]:
+                print("Processing document file:", file.name)
+                docx_transcribe = file_loader.read_file(file.file)
+                print("Extracted text from document:\n", docx_transcribe)
+                conversation.append(
+                    {
+                        "role": "system",
+                        "content": "This is the information that I have extracted from the document that user shared:\n\n"
+                        + docx_transcribe,
+                    }
+                )
+        if query:
+            res = text_generation.text_generation(
+                conversation + [{"role": "user", "content": query}]
+            )
+            conversation + [
+                [
+                    {"role": "user", "content": query},
+                    {"role": "assistant", "content": res},
+                ]
+            ]
+
+        channel.context = conversation
+        channel.save()
+        print("Conversation so far:\n", conversation)
+
+        return Response(
+            {"conversation": conversation},
+            status=200,  # 201 Created is often used for successful POST requests
+        )

@@ -8,6 +8,8 @@ from rest_framework.views import APIView
 from utils.file_logic import file_loader
 from utils.openai_logic import image_analyze, text_generation
 
+from .models import Channel
+
 ALLOWED_TYPES = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -18,7 +20,7 @@ ALLOWED_TYPES = [
 
 
 # Create your views here.
-class Channel(APIView):
+class ChannelView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [FormParser, MultiPartParser]
 
@@ -77,6 +79,7 @@ class Channel(APIView):
                 {"role": "assistant", "content": res},
             )
 
+        Channel.objects.create(user=request.user, title="new chat", context=conversation)
         print("Conversation so far:\n", conversation)
 
         return Response(

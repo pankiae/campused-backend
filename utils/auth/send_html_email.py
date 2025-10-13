@@ -9,12 +9,12 @@ def _send_html_email(
     subject: str, template_filename: str, context: dict, recipient_email: str
 ):
     """
-    Load an HTML template from users/files/<template_filename>, render it with `context`,
+    Load an HTML template from auth/../render_files/<template_filename>, render it with `context`,
     and send it via Gmail SMTP (as configured in settings.py).
     """
     # 1) Locate the template file under utils/files/
     utils_dir = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(utils_dir, "files", template_filename)
+    template_path = os.path.join(utils_dir, "../render_files", template_filename)
 
     try:
         with open(template_path, "r", encoding="utf-8") as f:

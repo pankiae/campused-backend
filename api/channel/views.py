@@ -1,5 +1,7 @@
 import os
 
+from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -7,6 +9,9 @@ from rest_framework.views import APIView
 
 from utils.file_logic import file_loader
 from utils.openai_logic import image_analyze, text_generation
+
+from .models import Channel
+from .serializers import ChannelListSerializer
 
 ALLOWED_TYPES = [
     "application/pdf",
@@ -18,7 +23,7 @@ ALLOWED_TYPES = [
 
 
 # Create your views here.
-class Channel(APIView):
+class ChannelView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [FormParser, MultiPartParser]
 
@@ -77,9 +82,34 @@ class Channel(APIView):
                 {"role": "assistant", "content": res},
             )
 
+        Channel.objects.create(user=request.user, title="new chat", context=conversation)
         print("Conversation so far:\n", conversation)
 
         return Response(
             {"conversation": conversation},
             status=201,  # 201 Created is often used for successful POST requests
         )
+
+
+class ChannelListView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChannelListSerializer
+
+    def get_queryset(self):
+        return Channel.objects.filter(user=self.request.user)
+
+
+class ChannelPatchView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, channel_id):
+        return Channel.objects.get(id=channel_id, user=self.request.user)
+
+    def post(self, channel_id):
+        try:
+            conversation = Channel.objects.get(id=channel_id, user=self.request.user)
+        except Channel.DoesNotExist:
+            return Response({"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        

@@ -9,5 +9,9 @@ from api.user.models import User
 class Channel(models.Model):
     id = models.UUIDField(default=uuid4, primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    context = models.JSONField(default=[])
+    context = models.JSONField(default=list)
     title = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = "channel"
+        indexes = [models.Index(fields=["user"])]

@@ -119,7 +119,13 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # 'rest_framework.authentication.SessionAuthentication', # Optional
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -157,4 +163,4 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 
 # Frontend URL
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:420")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")

@@ -93,7 +93,7 @@ class ChannelView(APIView):
         )
 
 
-class ChannelListView(ListAPIView):
+class ListChannelView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChannelListSerializer
 
@@ -101,7 +101,7 @@ class ChannelListView(ListAPIView):
         return Channel.objects.filter(user=self.request.user)
 
 
-class ChannelPatchView(APIView):
+class PatchChannelView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 

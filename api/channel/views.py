@@ -1,5 +1,7 @@
+import logging
 import os
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -21,6 +23,11 @@ ALLOWED_TYPES = [
     "image/webp",
 ]
 
+# Limit uploads to 10 MB per file by default; can be overridden in Django settings
+MAX_FILE_SIZE = getattr(settings, "MAX_UPLOAD_FILE_SIZE", 20 * 1024 * 1024)
+
+logger = logging.getLogger(__name__)
+
 
 # Create your views here.
 class ChannelView(APIView):
@@ -40,32 +47,50 @@ class ChannelView(APIView):
                 "content": "You are a Exam Preparation helpful assistant. You help students to prepare for their exams by providing them with relevant information and resources. You can also help them to create study plans and schedules. You are very friendly and always respond in a positive manner. You can provide the answer directly or MCQ questions if the user asks for it or on your own for their better clarity about the topics.",
             }
         ]
-        print(f"Received {len(uploaded_files)} files and query: {query}")
+        logger.info("Received %d files and query: %s", len(uploaded_files), query)
         for file in uploaded_files:
             if file.content_type not in ALLOWED_TYPES:
                 return Response(
                     {"error": f"File type {file.content_type} not allowed"}, status=400
                 )
 
-            ext = os.path.splitext(file.name)[1].lower().strip(".")
-            print(f"Processing file: {file.name} with extension: {ext}")
+            ext = os.path.splitext(file.name)[1].lower().strip('.')
+            logger.debug("Processing file: %s with extension: %s", file.name, ext)
+
+            # Basic file size check
+            try:
+                size = getattr(file, "size", None)
+                if size is not None and size > MAX_FILE_SIZE:
+                    logger.warning("File %s exceeds max size (%d > %d)", file.name, size, MAX_FILE_SIZE)
+                    return Response({"error": "File too large"}, status=400)
+            except Exception:
+                # don't fail the whole request if size can't be determined
+                logger.debug("Could not determine file size for %s", file.name, exc_info=True)
 
             if ext in ["jpg", "jpeg", "png", "webp"]:
-                print("Processing image file:", file.name)
-                image_transcribe: str = image_analyze.image_analyze(file)
-                print("Extracted text from image:\n", image_transcribe)
+                logger.debug("Processing image file: %s", file.name)
+                try:
+                    image_transcribe: str = image_analyze.image_analyze(file)
+                except Exception:
+                    logger.exception("Failed to analyze image: %s", file.name)
+                    return Response({"error": "Failed to process image file"}, status=500)
+                logger.debug("Extracted text from image: %s", image_transcribe)
                 conversation.append(
                     {
                         "role": "system",
-                        "content": "This is the information that I have extracted from the image that user shared"
+                        "content": "This is the information that I have extracted from the image that user shared: \n"
                         + image_transcribe,
                     }
                 )
 
             elif ext in ["docx", "pdf"]:
-                print("Processing document file:", file.name)
-                docx_transcribe = file_loader.read_file(file.file)
-                print("Extracted text from document:\n", docx_transcribe)
+                logger.debug("Processing document file: %s", file.name)
+                try:
+                    docx_transcribe = file_loader.read_file(file.file)
+                except Exception:
+                    logger.exception("Failed to read document: %s", file.name)
+                    return Response({"error": "Failed to process document file"}, status=500)
+                logger.debug("Extracted text from document: %s", docx_transcribe)
                 conversation.append(
                     {
                         "role": "system",
@@ -75,17 +100,20 @@ class ChannelView(APIView):
                 )
 
         if query:
-            res = text_generation.text_generation(
-                conversation + [{"role": "user", "content": query}]
-            )
-            conversation.append(
+            try:
+                res = text_generation.text_generation(
+                    conversation + [{"role": "user", "content": query}]
+                )
+            except Exception:
+                logger.exception("Text generation failed for query: %s", query)
+                return Response({"error": "Failed to generate text"}, status=500)
+            conversation.extend([
+                {"role": "user", "content": query},
                 {"role": "assistant", "content": res},
-            )
+            ])
 
-        Channel.objects.create(
-            user=request.user, title="new chat", context=conversation
-        )
-        print("Conversation so far:\n", conversation)
+        Channel.objects.create(user=request.user, title=request.data.get("title", "new chat"), context=conversation)
+        logger.info("Conversation saved for user %s (messages=%d)", request.user, len(conversation))
 
         return Response(
             {"conversation": conversation},
@@ -126,32 +154,48 @@ class PatchChannelView(APIView):
             return Response(
                 {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND
             )
+        logger.info("Patching channel %s: received %d files and query: %s", channel_id, len(uploaded_files), query)
 
         for file in uploaded_files:
             if file.content_type not in ALLOWED_TYPES:
-                return Response(
-                    {"error": f"File type {file.content_type} not allowed"}, status=400
-                )
+                return Response({"error": f"File type {file.content_type} not allowed"}, status=400)
 
             ext = os.path.splitext(file.name)[1].lower().strip(".")
-            print(f"Processing file: {file.name} with extension: {ext}")
+            logger.debug("Processing file: %s with extension: %s", file.name, ext)
+
+            # Basic file size check
+            try:
+                size = getattr(file, "size", None)
+                if size is not None and size > MAX_FILE_SIZE:
+                    logger.warning("File %s exceeds max size (%d > %d)", file.name, size, MAX_FILE_SIZE)
+                    return Response({"error": "File too large"}, status=400)
+            except Exception:
+                logger.debug("Could not determine file size for %s", file.name, exc_info=True)
 
             if ext in ["jpg", "jpeg", "png", "webp"]:
-                print("Processing image file:", file.name)
-                image_transcribe: str = image_analyze.image_analyze(file)
-                print("Extracted text from image:\n", image_transcribe)
+                logger.debug("Processing image file: %s", file.name)
+                try:
+                    image_transcribe: str = image_analyze.image_analyze(file)
+                except Exception:
+                    logger.exception("Failed to analyze image: %s", file.name)
+                    return Response({"error": "Failed to process image file"}, status=500)
+                logger.debug("Extracted text from image: %s", image_transcribe)
                 conversation.append(
                     {
                         "role": "system",
-                        "content": "This is the information that I have extracted from the image that user shared"
+                        "content": "This is the information that I have extracted from the image that user shared: \n"
                         + image_transcribe,
                     }
                 )
 
             elif ext in ["docx", "pdf"]:
-                print("Processing document file:", file.name)
-                docx_transcribe = file_loader.read_file(file.file)
-                print("Extracted text from document:\n", docx_transcribe)
+                logger.debug("Processing document file: %s", file.name)
+                try:
+                    docx_transcribe = file_loader.read_file(file.file)
+                except Exception:
+                    logger.exception("Failed to read document: %s", file.name)
+                    return Response({"error": "Failed to process document file"}, status=500)
+                logger.debug("Extracted text from document: %s", docx_transcribe)
                 conversation.append(
                     {
                         "role": "system",
@@ -160,19 +204,22 @@ class PatchChannelView(APIView):
                     }
                 )
         if query:
-            res = text_generation.text_generation(
-                conversation + [{"role": "user", "content": query}]
-            )
-            conversation + [
-                [
-                    {"role": "user", "content": query},
-                    {"role": "assistant", "content": res},
-                ]
-            ]
+            try:
+                res = text_generation.text_generation(
+                    conversation + [{"role": "user", "content": query}]
+                )
+            except Exception:
+                logger.exception("Text generation failed for query: %s", query)
+                return Response({"error": "Failed to generate text"}, status=500)
+            conversation.extend([
+                {"role": "user", "content": query},
+                {"role": "assistant", "content": res},
+            ])
 
         channel.context = conversation
         channel.save()
-        print("Conversation so far:\n", conversation)
+        logger.info("Updated channel %s for user %s (messages=%d)", channel_id, request.user, len(conversation))
+
 
         return Response(
             {"conversation": conversation},

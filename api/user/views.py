@@ -194,6 +194,8 @@ class EmailLoginAPIView(GenericAPIView):
 
 
 class GoogleAuthView(GenericAPIView):
+    permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         id_token_value = request.data.get("id_token")
         print("ID Token:", id_token_value)

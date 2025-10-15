@@ -54,18 +54,25 @@ class ChannelView(APIView):
                     {"error": f"File type {file.content_type} not allowed"}, status=400
                 )
 
-            ext = os.path.splitext(file.name)[1].lower().strip('.')
+            ext = os.path.splitext(file.name)[1].lower().strip(".")
             logger.debug("Processing file: %s with extension: %s", file.name, ext)
 
             # Basic file size check
             try:
                 size = getattr(file, "size", None)
                 if size is not None and size > MAX_FILE_SIZE:
-                    logger.warning("File %s exceeds max size (%d > %d)", file.name, size, MAX_FILE_SIZE)
+                    logger.warning(
+                        "File %s exceeds max size (%d > %d)",
+                        file.name,
+                        size,
+                        MAX_FILE_SIZE,
+                    )
                     return Response({"error": "File too large"}, status=400)
             except Exception:
                 # don't fail the whole request if size can't be determined
-                logger.debug("Could not determine file size for %s", file.name, exc_info=True)
+                logger.debug(
+                    "Could not determine file size for %s", file.name, exc_info=True
+                )
 
             if ext in ["jpg", "jpeg", "png", "webp"]:
                 logger.debug("Processing image file: %s", file.name)
@@ -73,7 +80,9 @@ class ChannelView(APIView):
                     image_transcribe: str = image_analyze.image_analyze(file)
                 except Exception:
                     logger.exception("Failed to analyze image: %s", file.name)
-                    return Response({"error": "Failed to process image file"}, status=500)
+                    return Response(
+                        {"error": "Failed to process image file"}, status=500
+                    )
                 logger.debug("Extracted text from image: %s", image_transcribe)
                 conversation.append(
                     {
@@ -89,7 +98,9 @@ class ChannelView(APIView):
                     docx_transcribe = file_loader.read_file(file.file)
                 except Exception:
                     logger.exception("Failed to read document: %s", file.name)
-                    return Response({"error": "Failed to process document file"}, status=500)
+                    return Response(
+                        {"error": "Failed to process document file"}, status=500
+                    )
                 logger.debug("Extracted text from document: %s", docx_transcribe)
                 conversation.append(
                     {
@@ -107,16 +118,29 @@ class ChannelView(APIView):
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
-            conversation.extend([
-                {"role": "user", "content": query},
-                {"role": "assistant", "content": res},
-            ])
+            conversation.extend(
+                [
+                    {"role": "user", "content": query},
+                    {"role": "assistant", "content": res},
+                ]
+            )
 
-        Channel.objects.create(user=request.user, title=request.data.get("title", "new chat"), context=conversation)
-        logger.info("Conversation saved for user %s (messages=%d)", request.user, len(conversation))
+        channnel = Channel.objects.create(
+            user=request.user,
+            title=request.data.get("title", "new chat"),
+            context=conversation,
+        )
+        logger.info(
+            "Conversation saved for user %s (messages=%d)",
+            request.user,
+            len(conversation),
+        )
 
         return Response(
-            {"conversation": conversation},
+            {
+                "conversation": conversation,
+                "channel_id": channnel.id,
+            },
             status=201,  # 201 Created is often used for successful POST requests
         )
 
@@ -154,11 +178,18 @@ class PatchChannelView(APIView):
             return Response(
                 {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        logger.info("Patching channel %s: received %d files and query: %s", channel_id, len(uploaded_files), query)
+        logger.info(
+            "Patching channel %s: received %d files and query: %s",
+            channel_id,
+            len(uploaded_files),
+            query,
+        )
 
         for file in uploaded_files:
             if file.content_type not in ALLOWED_TYPES:
-                return Response({"error": f"File type {file.content_type} not allowed"}, status=400)
+                return Response(
+                    {"error": f"File type {file.content_type} not allowed"}, status=400
+                )
 
             ext = os.path.splitext(file.name)[1].lower().strip(".")
             logger.debug("Processing file: %s with extension: %s", file.name, ext)
@@ -167,10 +198,17 @@ class PatchChannelView(APIView):
             try:
                 size = getattr(file, "size", None)
                 if size is not None and size > MAX_FILE_SIZE:
-                    logger.warning("File %s exceeds max size (%d > %d)", file.name, size, MAX_FILE_SIZE)
+                    logger.warning(
+                        "File %s exceeds max size (%d > %d)",
+                        file.name,
+                        size,
+                        MAX_FILE_SIZE,
+                    )
                     return Response({"error": "File too large"}, status=400)
             except Exception:
-                logger.debug("Could not determine file size for %s", file.name, exc_info=True)
+                logger.debug(
+                    "Could not determine file size for %s", file.name, exc_info=True
+                )
 
             if ext in ["jpg", "jpeg", "png", "webp"]:
                 logger.debug("Processing image file: %s", file.name)
@@ -178,7 +216,9 @@ class PatchChannelView(APIView):
                     image_transcribe: str = image_analyze.image_analyze(file)
                 except Exception:
                     logger.exception("Failed to analyze image: %s", file.name)
-                    return Response({"error": "Failed to process image file"}, status=500)
+                    return Response(
+                        {"error": "Failed to process image file"}, status=500
+                    )
                 logger.debug("Extracted text from image: %s", image_transcribe)
                 conversation.append(
                     {
@@ -194,7 +234,9 @@ class PatchChannelView(APIView):
                     docx_transcribe = file_loader.read_file(file.file)
                 except Exception:
                     logger.exception("Failed to read document: %s", file.name)
-                    return Response({"error": "Failed to process document file"}, status=500)
+                    return Response(
+                        {"error": "Failed to process document file"}, status=500
+                    )
                 logger.debug("Extracted text from document: %s", docx_transcribe)
                 conversation.append(
                     {
@@ -211,15 +253,21 @@ class PatchChannelView(APIView):
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
-            conversation.extend([
-                {"role": "user", "content": query},
-                {"role": "assistant", "content": res},
-            ])
+            conversation.extend(
+                [
+                    {"role": "user", "content": query},
+                    {"role": "assistant", "content": res},
+                ]
+            )
 
         channel.context = conversation
         channel.save()
-        logger.info("Updated channel %s for user %s (messages=%d)", channel_id, request.user, len(conversation))
-
+        logger.info(
+            "Updated channel %s for user %s (messages=%d)",
+            channel_id,
+            request.user,
+            len(conversation),
+        )
 
         return Response(
             {"conversation": conversation},

@@ -25,6 +25,7 @@ from .serializers import (
 
 
 class SignUPView(GenericAPIView):
+    permission_classes = [AllowAny]
     serializer_class = EmailRegistrationSerializer
 
     def post(self, request, *args, **kwargs):
@@ -184,7 +185,7 @@ class EmailLoginAPIView(GenericAPIView):
     """
 
     serializer_class = EmailLoginSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

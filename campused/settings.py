@@ -170,4 +170,40 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 OPENAI_API_KEY = env("OPENAI_API_KEY")
 
 # Frontend URL
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:4200")
+ 
+# Basic logging configuration: print logs to console so view loggers (logger.info/debug/etc.)
+# are visible when running the development server.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG" if DEBUG else "INFO",
+    },
+    "loggers": {
+        # Keep Django's own logs at INFO in dev unless DEBUG is true
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Your app namespace — set to DEBUG in development to surface logger.debug
+        "api": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+    },
+}

@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 
@@ -112,18 +113,19 @@ class ChannelView(APIView):
 
         if query:
             try:
+                sorted_conversation = remove_file_name_conversation(conversation)
                 res = text_generation.text_generation(
-                    conversation + [{"role": "user", "content": query}]
+                    sorted_conversation + [{"role": "user", "content": query}]
                 )
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
-            conversation.extend(
-                [
-                    {"role": "user", "content": query},
-                    {"role": "assistant", "content": res},
-                ]
-            )
+
+            user_query = {"role": "user", "content": query}
+            if uploaded_files:
+                user_query["files"] = [f.name for f in uploaded_files]
+            query_res = {"role": "assistant", "content": res}
+            conversation.extend([user_query, query_res])
 
         channnel = Channel.objects.create(
             user=request.user,
@@ -150,7 +152,7 @@ class ListChannelView(ListAPIView):
     serializer_class = ChannelListSerializer
 
     def get_queryset(self):
-        return Channel.objects.filter(user=self.request.user)
+        return Channel.objects.filter(user=self.request.user).order_by("-updated_at")
 
 
 class PatchChannelView(APIView):
@@ -174,6 +176,7 @@ class PatchChannelView(APIView):
         try:
             channel = Channel.objects.get(id=channel_id, user=request.user)
             conversation = channel.context
+            logger.info("conversation: %s", conversation)
         except Channel.DoesNotExist:
             return Response(
                 {"error": "Channel not found"}, status=status.HTTP_404_NOT_FOUND
@@ -247,18 +250,19 @@ class PatchChannelView(APIView):
                 )
         if query:
             try:
+                sorted_conversation = remove_file_name_conversation(conversation)
                 res = text_generation.text_generation(
-                    conversation + [{"role": "user", "content": query}]
+                    sorted_conversation + [{"role": "user", "content": query}]
                 )
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
-            conversation.extend(
-                [
-                    {"role": "user", "content": query},
-                    {"role": "assistant", "content": res},
-                ]
-            )
+
+            user_query = {"role": "user", "content": query}
+            if uploaded_files:
+                user_query["files"] = [f.name for f in uploaded_files]
+            query_res = {"role": "assistant", "content": res}
+            conversation.extend([user_query, query_res])
 
         channel.context = conversation
         channel.save()
@@ -271,5 +275,14 @@ class PatchChannelView(APIView):
 
         return Response(
             {"conversation": conversation},
-            status=200,  # 201 Created is often used for successful POST requests
+            status=200,
         )
+
+
+def remove_file_name_conversation(conversation):
+    new_conversation = []
+    for message in conversation:
+        msg_copy = copy.deepcopy(message)
+        msg_copy.pop("files", None)
+        new_conversation.append(msg_copy)
+    return new_conversation

@@ -79,14 +79,14 @@ class VerifyPaymentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
-        logger.info("Fetched order from DB: %s", order)
-        logger.info("Updating order status for order: %s", order)
-        order.is_paid = True
-        order.razorpay_payment_id = data["razorpay_payment_id"]
-        order.razorpay_signature = data["razorpay_signature"]
-        order.save()
-        logger.info("Order updated successfully: %s", order)
+        # order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
+        # logger.info("Fetched order from DB: %s", order)
+        # logger.info("Updating order status for order: %s", order)
+        # order.is_paid = True
+        # order.razorpay_payment_id = data["razorpay_payment_id"]
+        # order.razorpay_signature = data["razorpay_signature"]
+        # order.save()
+        # logger.info("Order updated successfully: %s", order)
         return Response({"status": "success"})
 
 
@@ -121,13 +121,13 @@ class RazorpayWebhookView(APIView):
             razorpay_order_id = payment.get("order_id")
             razorpay_payment_id = payment.get("id")
 
-            try:
-                order = Order.objects.get(razorpay_order_id=razorpay_order_id)
-                order.is_paid = True
-                order.razorpay_payment_id = razorpay_payment_id
-                order.save()
-            except Order.DoesNotExist:
-                pass
+            # try:
+            #     order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+            #     order.is_paid = True
+            #     order.razorpay_payment_id = razorpay_payment_id
+            #     order.save()
+            # except Order.DoesNotExist:
+            #     pass
 
         logger.info("successful")
         return HttpResponse(status=200)

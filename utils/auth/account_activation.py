@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
@@ -19,9 +20,9 @@ def send_activation_email(user, request):
     token.set_exp(lifetime=timedelta(days=1))
     token_str = str(token)
 
-    # 2) Build activation link: https://<domain>/api/verify-email/?token=<jwt>
-    verify_path = reverse("verify-email")
-    activation_url = request.build_absolute_uri(f"{verify_path}?token={token_str}")
+    # 2) Build activation link: https://<domain>/api/verify-email?token=<jwt>
+    frontend_url = settings.FRONTEND_URL  # Get the frontend URL from settings
+    activation_url = f"{frontend_url}/verify-email?token={token_str}"
 
     # 3) Prepare context & subject
     subject = "Activate Your Account"

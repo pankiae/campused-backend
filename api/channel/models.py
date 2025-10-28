@@ -15,6 +15,7 @@ class Channel(models.Model):
     title = models.CharField(max_length=20)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
+    token_cost = models.JSONField(default={})
 
     class Meta:
         db_table = "channel"

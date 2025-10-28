@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.file_logic import file_loader
-from utils.openai_logic import image_analyze, text_generation
+from utils.openai_logic import image_analyze, text_generation, token_calculation
 
 from .models import Channel
 from .serializers import ChannelListSerializer
@@ -48,6 +48,10 @@ class ChannelView(APIView):
                 "content": "You are a Exam Preparation helpful assistant. You help students to prepare for their exams by providing them with relevant information and resources. You can also help them to create study plans and schedules. You are very friendly and always respond in a positive manner. You can provide the answer directly or MCQ questions if the user asks for it or on your own for their better clarity about the topics.",
             }
         ]
+
+        gather_tokens = {"input": 0, "output": 0}
+        select_openai_model = "gpt-4.1-mini"
+
         logger.info("Received %d files and query: %s", len(uploaded_files), query)
         for file in uploaded_files:
             if file.content_type not in ALLOWED_TYPES:
@@ -74,11 +78,14 @@ class ChannelView(APIView):
                 logger.debug(
                     "Could not determine file size for %s", file.name, exc_info=True
                 )
-
             if ext in ["jpg", "jpeg", "png", "webp"]:
                 logger.debug("Processing image file: %s", file.name)
                 try:
-                    image_transcribe: str = image_analyze.image_analyze(file)
+                    image_transcribe, image_input_tokens, image_output_tokens = (
+                        image_analyze.image_analyze(file, select_openai_model)
+                    )
+                    gather_tokens["input"] += image_input_tokens
+                    gather_tokens["output"] += image_output_tokens
                 except Exception:
                     logger.exception("Failed to analyze image: %s", file.name)
                     return Response(
@@ -114,9 +121,14 @@ class ChannelView(APIView):
         if query:
             try:
                 sorted_conversation = remove_file_name_conversation(conversation)
-                res = text_generation.text_generation(
-                    sorted_conversation + [{"role": "user", "content": query}]
+                res, text_input_tokens, text_output_tokens = (
+                    text_generation.text_generation(
+                        sorted_conversation + [{"role": "user", "content": query}],
+                        select_openai_model,
+                    )
                 )
+                gather_tokens["input"] += text_input_tokens
+                gather_tokens["output"] += text_output_tokens
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
@@ -127,10 +139,14 @@ class ChannelView(APIView):
             query_res = {"role": "assistant", "content": res}
             conversation.extend([user_query, query_res])
 
+        gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
+            select_openai_model, gather_tokens["input"], gather_tokens["output"]
+        )
         channnel = Channel.objects.create(
             user=request.user,
             title=request.data.get("title", "new chat"),
             context=conversation,
+            token_cost=gather_tokens_cost_sum,
         )
         logger.info(
             "Conversation saved for user %s (messages=%d)",

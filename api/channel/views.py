@@ -29,7 +29,7 @@ MAX_FILE_SIZE = getattr(settings, "MAX_UPLOAD_FILE_SIZE", 20 * 1024 * 1024)
 
 logger = logging.getLogger(__name__)
 
-select_openai_model = "gpt-4o-mini"
+select_openai_model = settings.OPENAI_MODEL
 
 
 # Create your views here.

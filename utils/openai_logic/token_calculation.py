@@ -80,8 +80,6 @@ def sum_input_output_token_cost(
     total_cost = input_cost + output_cost
 
     return {
-        "model": model,
-        "tier": tier,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "total_tokens": input_tokens + output_tokens,

@@ -87,3 +87,33 @@ def sum_input_output_token_cost(
         "output_cost_usd": round(output_cost, 6),
         "total_cost_usd": round(total_cost, 6),
     }
+
+
+def update_token_cost(existing: dict, new: dict, precision: int = 6) -> dict:
+    """
+    Merge and sum up token/cost usage dictionaries.
+
+    Parameters:
+        existing (dict): Existing token cost record
+        new (dict): New token cost record to merge
+        precision (int): Decimal places to round cost values (default: 6)
+
+    Returns:
+        dict: Updated combined token cost summary
+    """
+    result = existing.copy()
+
+    for key, value in new.items():
+        # For numeric fields, sum them
+        if isinstance(value, (int, float)):
+            result[key] = result.get(key, 0) + value
+        # Overwrite non-numeric info (model, tier, etc.)
+        elif key in ["model", "tier"]:
+            result[key] = value
+
+    # Round all USD cost fields
+    for k in result:
+        if "_usd" in k:
+            result[k] = round(result[k], precision)
+
+    return result

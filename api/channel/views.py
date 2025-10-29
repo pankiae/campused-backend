@@ -29,6 +29,8 @@ MAX_FILE_SIZE = getattr(settings, "MAX_UPLOAD_FILE_SIZE", 20 * 1024 * 1024)
 
 logger = logging.getLogger(__name__)
 
+select_openai_model = "gpt-5-nano"
+
 
 # Create your views here.
 class ChannelView(APIView):
@@ -50,7 +52,6 @@ class ChannelView(APIView):
         ]
 
         gather_tokens = {"input": 0, "output": 0}
-        select_openai_model = "gpt-4.1-mini"
 
         logger.info("Received %d files and query: %s", len(uploaded_files), query)
         for file in uploaded_files:
@@ -142,6 +143,7 @@ class ChannelView(APIView):
         gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
             select_openai_model, gather_tokens["input"], gather_tokens["output"]
         )
+
         channnel = Channel.objects.create(
             user=request.user,
             title=request.data.get("title", "new chat"),
@@ -190,6 +192,8 @@ class PatchChannelView(APIView):
                 {"error": "No files or query provided"}, status=400
             )  # 400 Bad Request
         try:
+            gather_tokens = {"input": 0, "output": 0}
+
             channel = Channel.objects.get(id=channel_id, user=request.user)
             conversation = channel.context
             logger.info("conversation: %s", conversation)
@@ -232,7 +236,12 @@ class PatchChannelView(APIView):
             if ext in ["jpg", "jpeg", "png", "webp"]:
                 logger.debug("Processing image file: %s", file.name)
                 try:
-                    image_transcribe: str = image_analyze.image_analyze(file)
+                    image_transcribe, image_input_tokens, image_output_tokens = (
+                        image_analyze.image_analyze(file, select_openai_model)
+                    )
+                    gather_tokens["input"] += image_input_tokens
+                    gather_tokens["output"] += image_output_tokens
+
                 except Exception:
                     logger.exception("Failed to analyze image: %s", file.name)
                     return Response(
@@ -267,9 +276,16 @@ class PatchChannelView(APIView):
         if query:
             try:
                 sorted_conversation = remove_file_name_conversation(conversation)
-                res = text_generation.text_generation(
-                    sorted_conversation + [{"role": "user", "content": query}]
+
+                res, text_input_tokens, text_output_tokens = (
+                    text_generation.text_generation(
+                        sorted_conversation + [{"role": "user", "content": query}],
+                        select_openai_model,
+                    )
                 )
+                gather_tokens["input"] += text_input_tokens
+                gather_tokens["output"] += text_output_tokens
+
             except Exception:
                 logger.exception("Text generation failed for query: %s", query)
                 return Response({"error": "Failed to generate text"}, status=500)
@@ -280,7 +296,16 @@ class PatchChannelView(APIView):
             query_res = {"role": "assistant", "content": res}
             conversation.extend([user_query, query_res])
 
+        gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
+            select_openai_model, gather_tokens["input"], gather_tokens["output"]
+        )
+
         channel.context = conversation
+        print(channel.token_cost, gather_tokens_cost_sum)
+        channel.token_cost = token_calculation.update_token_cost(
+            channel.token_cost, gather_tokens_cost_sum
+        )
+
         channel.save()
         logger.info(
             "Updated channel %s for user %s (messages=%d)",

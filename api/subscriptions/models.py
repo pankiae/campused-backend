@@ -6,9 +6,25 @@ from django.db import models
 User = get_user_model()
 
 
+class SubscriptionPlan(models.Model):
+    PLAN_CHOICES = [
+        ("basic", "Basic"),
+        ("pro", "Pro"),
+        ("enterprise", "Enterprise"),
+    ]
+
+    name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
+    token_limit = models.IntegerField()  # e.g., 30000, 65000, 150000
+    price_inr = models.FloatField()
+
+    class Meta:
+        db_table = "subscription_plans"
+
+
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True)
     amount = models.FloatField()
     currency = models.CharField(max_length=10, default="INR")
     razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
@@ -18,6 +34,6 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
         db_table = "subscriptions_orders"
+        ordering = ["-created_at"]
         indexes = [models.Index(fields=["user"])]

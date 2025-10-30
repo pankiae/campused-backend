@@ -66,3 +66,14 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return f"{self.email} : {self.created_at} - {self.is_active}"
+
+
+class UserCredit(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    total_tokens = models.IntegerField(default=0)  # Lifetime added
+    used_tokens = models.IntegerField(default=0)  # Lifetime used
+    remaining_tokens = models.IntegerField(default=0)  # Available to use
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "user_credits"

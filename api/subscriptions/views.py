@@ -6,12 +6,13 @@ import logging
 import razorpay
 from django.conf import settings
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Order
+from .models import Order, SubscriptionPlan
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +22,16 @@ class CreateOrderView(APIView):
 
     def post(self, request):
         amount = request.data.get("amount")  # in rupees
+        plan_id = request.data.get("plan_id")  # from frontend
+        plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+
         client = razorpay.Client(
             auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
-        logger.info("razor pay client initiated: %s", client)
 
         razorpay_order = client.order.create(
             {
-                "amount": int(amount * 100),  # Razorpay expects paise
+                "amount": int(amount * 100),  # in paise
                 "currency": "INR",
                 "payment_capture": 1,
             }
@@ -37,19 +40,21 @@ class CreateOrderView(APIView):
         fetch_razorpay_order = client.order.fetch(razorpay_order["id"])
         logger.info("Fetched razor pay order: %s", fetch_razorpay_order)
 
-        # order = Order.objects.create(
-        #     user=request.user,
-        #     amount=amount,
-        #     currency="INR",
-        #     razorpay_order_id=razorpay_order["id"],
-        # )
-        # logger.info("Order created in DB: %s", order)
+        order = Order.objects.create(
+            user=request.user,
+            amount=amount,
+            currency="INR",
+            plan=plan,
+            razorpay_order_id=razorpay_order["id"],
+        )
+        logger.info("Order created in DB: %s", order)
         return Response(
             {
                 "order_id": razorpay_order["id"],
                 "amount": razorpay_order["amount"],
                 "currency": razorpay_order["currency"],
                 "key": settings.RAZORPAY_KEY_ID,
+                "plan": plan.name,
             }
         )
 

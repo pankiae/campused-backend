@@ -69,7 +69,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.email}"
+        return f"{self.email} - {self.first_name} {self.last_name} | last login: {self.last_login}"
 
 
 class UserCredit(models.Model):

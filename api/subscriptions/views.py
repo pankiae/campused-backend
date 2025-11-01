@@ -98,13 +98,18 @@ class VerifyPaymentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
-        order.is_paid = True
-        order.razorpay_payment_id = data["razorpay_payment_id"]
-        order.razorpay_signature = data["razorpay_signature"]
-        order.save()
-        # ✅ Activate tokens here
-        activate_subscription(order)
+        try:
+            order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
+            if not order.is_paid:  # avoid double activation
+                order.is_paid = True
+                order.razorpay_payment_id = data["razorpay_payment_id"]
+                order.save()
+
+                # ✅ Activate tokens on webhook too
+                activate_subscription(order)
+
+        except Order.DoesNotExist:
+            pass
         logger.info("Order updated successfully: %s", order)
         return Response({"status": "success"})
 

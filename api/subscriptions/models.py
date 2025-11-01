@@ -14,8 +14,10 @@ class SubscriptionPlan(models.Model):
     ]
 
     name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
-    token_limit = models.IntegerField()  # e.g., 30000, 65000, 150000
+    token_limit = models.IntegerField()  # e.g., 30000, 100000, 300000
     price_inr = models.FloatField()
+    description = models.CharField(max_length=255, blank=True)
+    features = models.JSONField(default=list)
 
     class Meta:
         db_table = "subscription_plans"

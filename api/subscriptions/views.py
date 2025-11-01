@@ -8,15 +8,27 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from serializers import SubscriptionPlanSerializer
 
 from utils.subscription_logic.main import activate_subscription
 
 from .models import Order, SubscriptionPlan
 
 logger = logging.getLogger(__name__)
+
+
+class SubscriptionPlanListView(APIView):
+    """Public API to list all available subscription plans."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        plans = SubscriptionPlan.objects.all().order_by("token_limit")
+        serializer = SubscriptionPlanSerializer(plans, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CreateOrderView(APIView):

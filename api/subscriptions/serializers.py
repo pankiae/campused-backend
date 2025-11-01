@@ -1,9 +1,11 @@
 from rest_framework import serializers
 
-from .models import Order
+from .models import SubscriptionPlan
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    """Serializer for listing all subscription plans."""
+
     class Meta:
-        model = Order
-        fields = "__all__"
+        model = SubscriptionPlan
+        fields = ["id", "name", "token_limit", "price_inr", "description", "features"]

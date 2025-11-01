@@ -12,6 +12,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from utils.subscription_logic.main import activate_subscription
+
 from .models import Order, SubscriptionPlan
 
 logger = logging.getLogger(__name__)
@@ -84,20 +86,20 @@ class VerifyPaymentView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
-        # logger.info("Fetched order from DB: %s", order)
-        # logger.info("Updating order status for order: %s", order)
-        # order.is_paid = True
-        # order.razorpay_payment_id = data["razorpay_payment_id"]
-        # order.razorpay_signature = data["razorpay_signature"]
-        # order.save()
-        # logger.info("Order updated successfully: %s", order)
+        order = Order.objects.get(razorpay_order_id=data["razorpay_order_id"])
+        order.is_paid = True
+        order.razorpay_payment_id = data["razorpay_payment_id"]
+        order.razorpay_signature = data["razorpay_signature"]
+        order.save()
+        # ✅ Activate tokens here
+        activate_subscription(order)
+        logger.info("Order updated successfully: %s", order)
         return Response({"status": "success"})
 
 
 class RazorpayWebhookView(APIView):
-    authentication_classes = []  # Razorpay won't send JWT
-    permission_classes = []  # Keep public but verify signature!
+    authentication_classes = []
+    permission_classes = []
 
     def post(self, request):
         webhook_secret = settings.RAZORPAY_WEBHOOK_SECRET
@@ -119,20 +121,24 @@ class RazorpayWebhookView(APIView):
         event_type = event.get("event")
         logger.info("event captured: %s", event_type)
 
-        # Example: payment.captured
         if event_type == "payment.captured":
             payment = event["payload"]["payment"]["entity"]
             logger.info("payment obj: %s", payment)
             razorpay_order_id = payment.get("order_id")
             razorpay_payment_id = payment.get("id")
 
-            # try:
-            #     order = Order.objects.get(razorpay_order_id=razorpay_order_id)
-            #     order.is_paid = True
-            #     order.razorpay_payment_id = razorpay_payment_id
-            #     order.save()
-            # except Order.DoesNotExist:
-            #     pass
+            try:
+                order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+                if not order.is_paid:  # avoid double activation
+                    order.is_paid = True
+                    order.razorpay_payment_id = razorpay_payment_id
+                    order.save()
+
+                    # ✅ Activate tokens on webhook too
+                    activate_subscription(order)
+
+            except Order.DoesNotExist:
+                pass
 
         logger.info("successful")
         return HttpResponse(status=200)

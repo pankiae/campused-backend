@@ -1,19 +1,27 @@
-from api.subscriptions.models import UserCredit
+import logging
+
+from api.user.models import UserCredit
+
+logger = logging.getLogger(__name__)
 
 
 def activate_subscription(order):
     """
-    Add tokens to user's balance when a plan is purchased successfully.
-    If user already has tokens, sum them up.
+    Credit tokens to user after successful payment.
+    Add tokens cumulatively if user already has credits.
     """
     plan = order.plan
+    if not plan:
+        logger.warning("Order %s has no plan linked", order.id)
+        return None
+
     user_credit, _ = UserCredit.objects.get_or_create(user=order.user)
 
-    # Add new plan tokens to the user's existing balance
     user_credit.total_tokens += plan.token_limit
     user_credit.remaining_tokens += plan.token_limit
     user_credit.save()
 
+    logger.info("Added %s tokens to user %s", plan.token_limit, order.user.username)
     return user_credit
 
 

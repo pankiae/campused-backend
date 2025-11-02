@@ -12,7 +12,7 @@ class SubscriptionPlan(models.Model):
         ("pro", "Pro"),
         ("enterprise", "Enterprise"),
     ]
-
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
     token_limit = models.IntegerField()  # e.g., 30000, 100000, 300000
     price_inr = models.FloatField()

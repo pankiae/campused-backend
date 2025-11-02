@@ -11,11 +11,11 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from serializers import SubscriptionPlanSerializer
 
 from utils.subscription_logic.main import activate_subscription
 
 from .models import Order, SubscriptionPlan
+from .serializers import SubscriptionPlanSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        amount = request.data.get("amount")  # in rupees
+        # amount = request.data.get("amount")  # in rupees
         plan_id = request.data.get("plan_id")  # from frontend
         plan = get_object_or_404(SubscriptionPlan, id=plan_id)
 
@@ -45,7 +45,7 @@ class CreateOrderView(APIView):
 
         razorpay_order = client.order.create(
             {
-                "amount": int(amount * 100),  # in paise
+                "amount": int(plan.price_inr * 100),  # in paise
                 "currency": "INR",
                 "payment_capture": 1,
             }
@@ -56,7 +56,7 @@ class CreateOrderView(APIView):
 
         order = Order.objects.create(
             user=request.user,
-            amount=amount,
+            amount=plan.price_inr,
             currency="INR",
             plan=plan,
             razorpay_order_id=razorpay_order["id"],

@@ -17,9 +17,28 @@ class TokenUsageMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         # Only process authenticated users
-        if not request.user.is_authenticated:
+        user = getattr(request, "user", None)
+
+        # If request.user is Anonymous, try to authenticate using DRF/SimpleJWT so bearer tokens work here
+        if not user or not getattr(user, "is_authenticated", False):
+            try:
+                from rest_framework_simplejwt.authentication import JWTAuthentication
+
+                jwt_auth = JWTAuthentication()
+                auth_result = jwt_auth.authenticate(
+                    request
+                )  # returns (user, token) or None
+                if auth_result is not None:
+                    request.user, request.auth = auth_result
+            except Exception:
+                # If simplejwt not available or auth fails, leave request.user as-is
+                logger.debug(
+                    "JWT authenticate attempt failed or not available", exc_info=True
+                )
+
+        if not getattr(request, "user", None) or not request.user.is_authenticated:
             return None
-        logger.info("user: %s", request.user)
+
         # Skip admin or non-chat routes if needed
         if not request.path.startswith("/api/channel"):
             return None

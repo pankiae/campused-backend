@@ -156,6 +156,8 @@ class ChannelView(APIView):
             len(conversation),
         )
 
+        request._request.gather_tokens = gather_tokens
+        request._request.gather_tokens["model"] = select_openai_model
         return Response(
             {
                 "conversation": conversation,

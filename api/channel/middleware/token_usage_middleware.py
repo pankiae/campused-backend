@@ -66,6 +66,8 @@ class TokenUsageMiddleware(MiddlewareMixin):
         """
         Update token usage after successful response and attach remaining tokens.
         """
+        if request.method == "GET":
+            return response
         try:
             # Skip if no user or no token data was set
             if not hasattr(request, "user") or not hasattr(request, "user_credit"):

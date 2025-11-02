@@ -17,6 +17,8 @@ class TokenUsageMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         # Only process authenticated users
+        if request.method == "GET":
+            return None
         user = getattr(request, "user", None)
 
         # If request.user is Anonymous, try to authenticate using DRF/SimpleJWT so bearer tokens work here

@@ -20,5 +20,5 @@ urlpatterns = [
     path("reset-password", ResetPasswordAPIView.as_view(), name="reset-password"),
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("user/credits", UserCreditView.as_view(), name="user-credit-details"),
+    path("token-credits", UserCreditView.as_view(), name="user-credit-details"),
 ]

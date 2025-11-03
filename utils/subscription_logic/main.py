@@ -21,7 +21,7 @@ def activate_subscription(order):
     user_credit.remaining_tokens += plan.token_limit
     user_credit.save()
 
-    logger.info("Added %s tokens to user %s", plan.token_limit, order.user.username)
+    logger.info("Added %s tokens to user %s", plan.token_limit, order.user.email)
     return user_credit
 
 

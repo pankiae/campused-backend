@@ -12,7 +12,7 @@ class Channel(models.Model):
     id = models.UUIDField(default=uuid4, primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     context = models.JSONField(default=list)
-    title = models.CharField(max_length=20)
+    title = models.CharField(max_length=50)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
     token_cost = models.JSONField(default=dict)

@@ -149,10 +149,19 @@ class ChannelView(APIView):
         gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
             select_openai_model, gather_tokens["input"], gather_tokens["output"]
         )
+
+        try:
+            title, _, _ = text_generation.title_generation(query)
+            logger.info(f"Generated Title: {title}")
+        except Exception as e:
+            logger.warning(f"Title generation failed: {e}")
+            title = "new chat"
+
+        # that async function response going to use here. in the title section
         channnel = Channel.objects.create(
             id=channel_id,
             user=request.user,
-            title=request.data.get("title", "new chat"),
+            title=title,
             context=conversation,
             token_cost=gather_tokens_cost_sum,
         )
@@ -167,6 +176,7 @@ class ChannelView(APIView):
         return Response(
             {
                 "conversation": conversation,
+                "title": title,
                 "channel_id": channnel.id,
             },
             status=201,  # 201 Created is often used for successful POST requests

@@ -298,8 +298,13 @@ class PatchChannelView(APIView):
                 return Response({"error": "Failed to generate text"}, status=500)
 
             user_query = {"role": "user", "content": query}
+
             if uploaded_files:
-                user_query["files"] = [f.name for f in uploaded_files]
+                files = file_saver.save_uploaded_files(
+                    request.user.id, channel_id, uploaded_files
+                )
+                user_query["files"] = files
+
             query_res = {"role": "assistant", "content": res}
             conversation.extend([user_query, query_res])
 

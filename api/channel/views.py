@@ -84,7 +84,7 @@ class ChannelView(APIView):
                 logger.debug("Processing image file: %s", file.name)
                 try:
                     image_transcribe, image_input_tokens, image_output_tokens = (
-                        image_analyze.image_analyze(file, select_openai_model)
+                        image_analyze.image_analyze(file)
                     )
                     gather_tokens["input"] += image_input_tokens
                     gather_tokens["output"] += image_output_tokens
@@ -244,7 +244,7 @@ class PatchChannelView(APIView):
                 logger.debug("Processing image file: %s", file.name)
                 try:
                     image_transcribe, image_input_tokens, image_output_tokens = (
-                        image_analyze.image_analyze(file, select_openai_model)
+                        image_analyze.image_analyze(file)
                     )
                     gather_tokens["input"] += image_input_tokens
                     gather_tokens["output"] += image_output_tokens

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "api.user",
     "api.channel",
     "api.subscriptions",
+    "api.about",
 ]
 
 MIDDLEWARE = [
@@ -183,6 +184,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+CONTACT_NOTIFICATION_EMAIL = env("CONTACT_NOTIFICATION_EMAIL")
 
 # Google client ID
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")

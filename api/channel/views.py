@@ -4,6 +4,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.http import FileResponse, Http404
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -340,3 +341,38 @@ def remove_file_name_conversation(conversation):
         msg_copy.pop("files", None)
         new_conversation.append(msg_copy)
     return new_conversation
+
+
+class FileFetchView(APIView):
+    """
+    Securely stream a file belonging to the authenticated user,
+    under media/<user_id>/<channel_id>/<file_name>.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, channel_id, file_name):
+        try:
+            # Verify the channel belongs to the requesting user
+            channel = Channel.objects.get(id=channel_id, user=request.user)
+            print(channel.id)
+        except Channel.DoesNotExist:
+            return Response({"error": "Channel not found or unauthorized"}, status=404)
+
+        # Construct file path
+        file_path = os.path.join(
+            settings.MEDIA_ROOT, str(request.user.id), str(channel_id), file_name
+        )
+        print("file path: ", file_path)
+
+        # Check if file exists
+        if not os.path.exists(file_path):
+            raise Http404("File not found")
+
+        # Stream file instead of loading into memory
+        try:
+            response = FileResponse(open(file_path, "rb"))
+            response["Content-Disposition"] = f'inline; filename="{file_name}"'
+            return response
+        except Exception as e:
+            return Response({"error": f"Unable to read file: {str(e)}"}, status=500)

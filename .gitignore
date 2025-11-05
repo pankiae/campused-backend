@@ -209,3 +209,6 @@ __marimo__/
 
 # Migrations files
 api/*/migrations
+
+# Media Storage
+media

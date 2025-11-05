@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+import uuid
 
 from django.conf import settings
 from rest_framework import status
@@ -10,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from utils.file_logic import file_loader
+from utils.file_logic import file_loader, file_saver
 from utils.openai_logic import image_analyze, text_generation, token_calculation
 
 from .models import Channel
@@ -119,12 +120,13 @@ class ChannelView(APIView):
                     }
                 )
 
+        channel_id = uuid.uuid4()
         if query:
             try:
-                sorted_conversation = remove_file_name_conversation(conversation)
+                # sorted_conversation = remove_file_name_conversation(conversation)
                 res, text_input_tokens, text_output_tokens = (
                     text_generation.text_generation(
-                        sorted_conversation + [{"role": "user", "content": query}],
+                        conversation + [{"role": "user", "content": query}],
                         select_openai_model,
                     )
                 )
@@ -136,15 +138,18 @@ class ChannelView(APIView):
 
             user_query = {"role": "user", "content": query}
             if uploaded_files:
-                user_query["files"] = [f.name for f in uploaded_files]
+                files = file_saver.save_uploaded_files(
+                    request.user.id, channel_id, uploaded_files
+                )
+                user_query["files"] = files
             query_res = {"role": "assistant", "content": res}
             conversation.extend([user_query, query_res])
 
         gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
             select_openai_model, gather_tokens["input"], gather_tokens["output"]
         )
-
         channnel = Channel.objects.create(
+            id=channel_id,
             user=request.user,
             title=request.data.get("title", "new chat"),
             context=conversation,

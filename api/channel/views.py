@@ -403,14 +403,14 @@ class GenerateExamAPIView(APIView):
 
         try:
             # synchronous call to generate_exam
-            questions, token_cost = exam_generation.generate_exam(
+            questions = exam_generation.ExamPrepare(
                 exam=data["exam"],
                 subject=data["subject"],
                 difficulty=data["difficulty"],
                 language=data["language"],
                 mode=data["mode"],
                 count=data["count"],
-            )
+            ).generate_exam()
 
             return Response(
                 {
@@ -422,7 +422,6 @@ class GenerateExamAPIView(APIView):
                     "mode": data["mode"],
                     "count": data["count"],
                     "questions": questions,
-                    "token_cost": token_cost,
                 },
                 status=status.HTTP_200_OK,
             )

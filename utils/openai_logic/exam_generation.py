@@ -1,17 +1,21 @@
 # exam/utils.py
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
-from client_create import client
 from pydantic import BaseModel, Field
+
+from .client_create import client
 
 
 class MCQSchema(BaseModel):
     question: str
-    mcq: Dict[int, str] = Field(
-        ...,
-        description="give four options in which one or two write. like: 1, 2, 3 and 4 for option serial number.",
+    options: Dict[str, str]
+    correct_options: int | list[int] = Field(
+        ..., description="give the correct option."
     )
-    correct_options: int = Field(..., description="give the correct option.")
+
+
+class MCQSchemaList(BaseModel):
+    questions: List[MCQSchema]
 
 
 class FlashCardSchema(BaseModel):
@@ -25,13 +29,26 @@ class FlashCardSchema(BaseModel):
     )
 
 
+class FlashCardList(BaseModel):
+    questions: List[FlashCardSchema]
+
+
 class ExamPrepare:
-    def __init__(self, n: int, language: str, difficulty: str, exam: str, subject: str):
-        self.n = n
-        self.language = language
-        self.difficulty = difficulty
+    def __init__(
+        self,
+        exam: str,
+        subject: str,
+        difficulty: str,
+        language: str,
+        mode: str,
+        count: int,
+    ):
         self.exam = exam
         self.subject = subject
+        self.difficulty = difficulty
+        self.language = language
+        self.mode = mode
+        self.n = count
 
     def _mcq_prompt(self) -> str:
         # Placeholder MCQ generation - replace with LLM or real generator
@@ -49,15 +66,7 @@ class ExamPrepare:
         """
         return flashcard_prompt
 
-    def generate_exam(
-        self,
-        exam: str,
-        subject: str,
-        difficulty: str,
-        language: str,
-        mode: str,
-        count: int = 10,
-    ) -> Tuple[List[Dict], float]:
+    def generate_exam(self):
         """
         Synchronous exam generator.
 
@@ -72,12 +81,12 @@ class ExamPrepare:
         - For MCQ: include 'options' and 'correct_option_index'
         - For Flashcard: include 'question' and 'answer'
         """
-        if mode == "mcq":
+        if self.mode == "mcq":
             system_prompt = self._mcq_prompt()
-            to_generate = MCQSchema
-        if mode == "flashcard":
+            to_generate = MCQSchemaList
+        if self.mode == "flashcard":
             system_prompt = self._flashcard_prompt()
-            to_generate = FlashCardSchema
+            to_generate = FlashCardList
         questions = []
         response = client.responses.parse(
             model="gpt-4o-mini",
@@ -91,7 +100,5 @@ class ExamPrepare:
             text_format=to_generate,
         )
         questions = response.output_parsed
-
-        # token_cost is an estimated float; compute properly if using LLMs
-        token_cost_estimate = round(count * (0.2 if mode == "flashcard" else 0.5), 2)
-        return questions, token_cost_estimate
+        print("Generate Questions:\n", questions)
+        return questions

@@ -13,10 +13,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.file_logic import file_loader, file_saver
-from utils.openai_logic import image_analyze, text_generation, token_calculation
+from utils.openai_logic import (
+    exam_generation,
+    image_analyze,
+    text_generation,
+    token_calculation,
+)
 
 from .models import Channel
-from .serializers import ChannelListSerializer
+from .serializers import ChannelListSerializer, GenerateExamSerializer
 
 ALLOWED_TYPES = [
     "application/pdf",
@@ -386,3 +391,43 @@ class FileFetchView(APIView):
             return response
         except Exception as e:
             return Response({"error": f"Unable to read file: {str(e)}"}, status=500)
+
+
+class GenerateExamAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = GenerateExamSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            # synchronous call to generate_exam
+            questions, token_cost = exam_generation.generate_exam(
+                exam=data["exam"],
+                subject=data["subject"],
+                difficulty=data["difficulty"],
+                language=data["language"],
+                mode=data["mode"],
+                count=data["count"],
+            )
+
+            return Response(
+                {
+                    "status": "completed",
+                    "exam": data["exam"],
+                    "subject": data["subject"],
+                    "difficulty": data["difficulty"],
+                    "language": data["language"],
+                    "mode": data["mode"],
+                    "count": data["count"],
+                    "questions": questions,
+                    "token_cost": token_cost,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -80,7 +80,7 @@ class ExamPrepare:
             to_generate = FlashCardSchema
         questions = []
         response = client.responses.parse(
-            model="gpt-4o-2024-08-06",
+            model="gpt-4o-mini",
             input=[
                 {"role": "system", "content": system_prompt},
                 {

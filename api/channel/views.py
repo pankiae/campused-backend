@@ -21,7 +21,11 @@ from utils.openai_logic import (
 )
 
 from .models import Channel, Exam
-from .serializers import ChannelListSerializer, GenerateExamSerializer
+from .serializers import (
+    ChannelListSerializer,
+    ExamListSerializer,
+    GenerateExamSerializer,
+)
 
 ALLOWED_TYPES = [
     "application/pdf",
@@ -456,3 +460,11 @@ class GenerateExamAPIView(APIView):
             return Response(
                 {"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class ListExamView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExamListSerializer
+
+    def get_queryset(self):
+        return Exam.objects.filter(user=self.request.user).order_by("-updated_at")

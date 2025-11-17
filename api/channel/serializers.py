@@ -7,7 +7,7 @@ from .constants import (
     ALLOWED_MODES,
     EXAM_SUBJECTS,
 )
-from .models import Channel
+from .models import Channel, Exam
 
 
 class ChannelListSerializer(serializers.ModelSerializer):
@@ -49,3 +49,9 @@ class GenerateExamSerializer(serializers.Serializer):
         # normalize exam to canonical key
         data["exam"] = key_match
         return data
+
+
+class ExamListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exam
+        fields = ["id", "exam", "difficulty", "updated_at"]

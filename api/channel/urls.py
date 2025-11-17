@@ -12,4 +12,5 @@ urlpatterns = [
         name="fetch-file",
     ),
     path("exam-generation", V.GenerateExamAPIView.as_view(), name="exam-generation"),
+    path("list-exams", V.ListExamView.as_view(), name="list-exams"),
 ]

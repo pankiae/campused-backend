@@ -1,21 +1,36 @@
 # exam/utils.py
-from typing import Dict, List
+from typing import List, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .client_create import client
 
 
-class MCQSchema(BaseModel):
+class Options(BaseModel):
+    # Keys "1".."4" in JSON, but you access them as opt1..opt4 in Python
+    model_config = ConfigDict(populate_by_name=True)
+
+    opt1: str = Field(..., alias="1")
+    opt2: str = Field(..., alias="2")
+    opt3: str = Field(..., alias="3")
+    opt4: str = Field(..., alias="4")
+
+
+class MCQ(BaseModel):
     question: str
-    options: Dict[str, str]
-    correct_options: int | list[int] = Field(
-        ..., description="give the correct option."
+    options: Options
+    correct_option: Literal["1", "2", "3", "4"]
+    # required field, but allowed to be null (no default!)
+    explanation: str | None
+
+
+class MCQBatch(BaseModel):
+    # A list of MCQs – you can optionally constrain count in schema
+    questions: List[MCQ] = Field(
+        ...,
+        description="A list of multiple-choice questions",
+        json_schema_extra={"minItems": 1, "maxItems": 10},  # optional
     )
-
-
-class MCQSchemaList(BaseModel):
-    questions: List[MCQSchema]
 
 
 class FlashCardSchema(BaseModel):
@@ -29,8 +44,12 @@ class FlashCardSchema(BaseModel):
     )
 
 
-class FlashCardList(BaseModel):
-    questions: List[FlashCardSchema]
+class FlashCardBatch(BaseModel):
+    questions: List[FlashCardSchema] = Field(
+        ...,
+        description="A list of flashcard questions",
+        json_schema_extra={"minItems": 1, "maxItems": 20},  # optional
+    )
 
 
 class ExamPrepare:
@@ -83,10 +102,10 @@ class ExamPrepare:
         """
         if self.mode == "mcq":
             system_prompt = self._mcq_prompt()
-            to_generate = MCQSchemaList
+            to_generate = MCQBatch
         if self.mode == "flashcard":
             system_prompt = self._flashcard_prompt()
-            to_generate = FlashCardList
+            to_generate = FlashCardBatch
         questions = []
         response = client.responses.parse(
             model="gpt-4o-mini",
@@ -99,6 +118,6 @@ class ExamPrepare:
             ],
             text_format=to_generate,
         )
-        questions = response.output_parsed
-        print("Generate Questions:\n", questions)
+        questions = response.output_parsed.model_dump_json()
+        # print("Generate Questions:\n", questions)
         return questions

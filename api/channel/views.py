@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 import os
 import uuid
@@ -421,7 +422,7 @@ class GenerateExamAPIView(APIView):
                     "language": data["language"],
                     "mode": data["mode"],
                     "count": data["count"],
-                    "questions": questions,
+                    "questions": json.loads(questions),
                 },
                 status=status.HTTP_200_OK,
             )

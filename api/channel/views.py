@@ -1,5 +1,4 @@
 import copy
-import json
 import logging
 import os
 import uuid
@@ -21,7 +20,7 @@ from utils.openai_logic import (
     token_calculation,
 )
 
-from .models import Channel
+from .models import Channel, Exam
 from .serializers import ChannelListSerializer, GenerateExamSerializer
 
 ALLOWED_TYPES = [
@@ -402,17 +401,43 @@ class GenerateExamAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        gather_tokens = {"input": 0, "output": 0}
+
         try:
             # synchronous call to generate_exam
-            questions = exam_generation.ExamPrepare(
+            questions_answers, text_input_token, text_output_token = (
+                exam_generation.ExamPrepare(
+                    exam=data["exam"],
+                    subject=data["subject"],
+                    difficulty=data["difficulty"],
+                    language=data["language"],
+                    mode=data["mode"],
+                    count=data["count"],
+                ).generate_exam()
+            )
+            print("questions_answers: \n", questions_answers)
+            gather_tokens["input"] += text_input_token
+            gather_tokens["output"] += text_output_token
+            gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
+                select_openai_model, gather_tokens["input"], gather_tokens["output"]
+            )
+            exam = Exam.objects.create(
+                user=request.user,
                 exam=data["exam"],
                 subject=data["subject"],
                 difficulty=data["difficulty"],
                 language=data["language"],
                 mode=data["mode"],
-                count=data["count"],
-            ).generate_exam()
-
+                questions_answers=questions_answers,
+                token_cost=gather_tokens_cost_sum,
+            )
+            logger.info(
+                "Conversation saved for user %s (messages=%d)",
+                request.user,
+                len(questions_answers),
+            )
+            request._request.gather_tokens = gather_tokens
+            request._request.gather_tokens["model"] = select_openai_model
             return Response(
                 {
                     "status": "completed",
@@ -422,7 +447,7 @@ class GenerateExamAPIView(APIView):
                     "language": data["language"],
                     "mode": data["mode"],
                     "count": data["count"],
-                    "questions": json.loads(questions),
+                    "questions_answers": questions_answers,
                 },
                 status=status.HTTP_200_OK,
             )

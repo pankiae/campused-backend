@@ -26,7 +26,7 @@ class MCQ(BaseModel):
 
 class MCQBatch(BaseModel):
     # A list of MCQs – you can optionally constrain count in schema
-    questions: List[MCQ] = Field(
+    questions_answers: List[MCQ] = Field(
         ...,
         description="A list of multiple-choice questions",
         json_schema_extra={"minItems": 1, "maxItems": 10},  # optional
@@ -45,7 +45,7 @@ class FlashCardSchema(BaseModel):
 
 
 class FlashCardBatch(BaseModel):
-    questions: List[FlashCardSchema] = Field(
+    questions_answers: List[FlashCardSchema] = Field(
         ...,
         description="A list of flashcard questions",
         json_schema_extra={"minItems": 1, "maxItems": 20},  # optional
@@ -106,7 +106,6 @@ class ExamPrepare:
         if self.mode == "flashcard":
             system_prompt = self._flashcard_prompt()
             to_generate = FlashCardBatch
-        questions = []
         response = client.responses.parse(
             model="gpt-4o-mini",
             input=[
@@ -118,6 +117,9 @@ class ExamPrepare:
             ],
             text_format=to_generate,
         )
-        questions = response.output_parsed.model_dump_json()
-        # print("Generate Questions:\n", questions)
-        return questions
+        questions_answers = response.output_parsed.model_dump()
+        return (
+            questions_answers.get("questions_answers"),
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+        )

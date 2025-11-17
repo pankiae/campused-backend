@@ -55,3 +55,16 @@ class ExamListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exam
         fields = ["id", "exam", "difficulty", "updated_at"]
+
+
+class ExamGetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exam
+        fields = [
+            "exam",
+            "difficulty",
+            "language",
+            "mode",
+            "questions_answers",
+            "updated_at",
+        ]

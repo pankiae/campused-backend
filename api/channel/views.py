@@ -6,7 +6,7 @@ import uuid
 from django.conf import settings
 from django.http import FileResponse, Http404
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -23,6 +23,7 @@ from utils.openai_logic import (
 from .models import Channel, Exam
 from .serializers import (
     ChannelListSerializer,
+    ExamGetSerializer,
     ExamListSerializer,
     GenerateExamSerializer,
 )
@@ -468,3 +469,13 @@ class ListExamView(ListAPIView):
 
     def get_queryset(self):
         return Exam.objects.filter(user=self.request.user).order_by("-updated_at")
+
+
+class GetExamView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExamGetSerializer
+
+    def get(self, request, exam_id):
+        exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+        serializer = self.serializer_class(exam)
+        return Response(serializer.data)

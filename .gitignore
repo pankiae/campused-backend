@@ -212,3 +212,4 @@ api/*/migrations
 
 # Media Storage
 media
+*.ipynb

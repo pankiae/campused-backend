@@ -17,9 +17,9 @@ def save_uploaded_files(user_id, channel_id, uploaded_files):
     os.makedirs(user_media_dir, exist_ok=True)
 
     for file in uploaded_files:
-        ext = os.path.splitext(file.name)[1].lower()
-        base_name = os.path.splitext(file.name)[0]
-        save_name = file.name
+        original_name = os.path.basename(file.name)
+        base_name, ext = os.path.splitext(original_name)
+        save_name = original_name
         save_path = os.path.join(user_media_dir, save_name)
 
         # Avoid overwriting existing files

@@ -39,19 +39,7 @@ SECRET_KEY = "django-insecure-g0v)nc2uirdntl$+=wqnh8qg7!o!mxj$5hx&9(&dt1dp-k=hwk
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
-# Now CORS_ variables get read as real Python types:
-CORS_ALLOWED_ORIGINS = env(
-    "CORS_ALLOWED_ORIGINS"
-)  # → ["http://localhost:3000", "https://creatorsparadise.ai"]
-CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS")  # → False
-CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS")  # → True or False as set in .env
-CSRF_TRUSTED_ORIGINS = [
-    "https://api.campused.ai",
-    # add any other host you call from, eg "https://app.campused.ai"
-]
-
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -77,6 +65,27 @@ MIDDLEWARE = [
     "api.channel.middleware.token_usage_middleware.TokenUsageMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+# Now CORS_ variables get read as real Python types:
+CORS_ALLOWED_ORIGINS = env(
+    "CORS_ALLOWED_ORIGINS"
+)  # → ["http://localhost:3000", "https://creatorsparadise.ai"]
+CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS")  # → False
+CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS")  # → True or False as set in .env
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.campused.ai",
+    # add any other host you call from, eg "https://app.campused.ai"
+]
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-user-remaining-tokens",
+]
+
+CORS_EXPOSE_HEADERS = [
+    "x-user-remaining-tokens",
 ]
 
 SIMPLE_JWT = {

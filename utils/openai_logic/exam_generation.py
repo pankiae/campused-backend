@@ -21,7 +21,9 @@ class MCQ(BaseModel):
     options: Options
     correct_option: Literal["1", "2", "3", "4"]
     # required field, but allowed to be null (no default!)
-    explanation: str | None
+    explanation: str = Field(
+        ..., description="provide the explaination or history of the provided answer."
+    )
 
 
 class MCQBatch(BaseModel):

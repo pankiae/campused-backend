@@ -81,3 +81,6 @@ class UserCredit(models.Model):
 
     class Meta:
         db_table = "user_credits"
+
+    def __str__(self):
+        return f"{self.user.email} | remaining tokens : {self.remaining_tokens} | {self.last_updated}"

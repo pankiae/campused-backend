@@ -6,7 +6,7 @@ from google.oauth2 import id_token as google_id_token
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -15,16 +15,18 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from campused.settings import GOOGLE_CLIENT_ID
 from utils.auth.account_activation import send_activation_email
 
-from .models import Provider, User
+from .models import Provider, User, UserCredit
 from .serializers import (
     EmailLoginSerializer,
     EmailRegistrationSerializer,
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
+    UserCreditSerializer,
 )
 
 
 class SignUPView(GenericAPIView):
+    permission_classes = [AllowAny]
     serializer_class = EmailRegistrationSerializer
 
     def post(self, request, *args, **kwargs):
@@ -184,7 +186,7 @@ class EmailLoginAPIView(GenericAPIView):
     """
 
     serializer_class = EmailLoginSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -194,6 +196,8 @@ class EmailLoginAPIView(GenericAPIView):
 
 
 class GoogleAuthView(GenericAPIView):
+    permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         id_token_value = request.data.get("id_token")
         print("ID Token:", id_token_value)
@@ -322,3 +326,18 @@ class ResetPasswordAPIView(GenericAPIView):
             {"detail": "Password has been reset successfully."},
             status=status.HTTP_200_OK,
         )
+
+
+class UserCreditView(APIView):
+    """
+    Fetch the user's current token credit details.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        credit, _ = UserCredit.objects.get_or_create(user=user)
+
+        serializer = UserCreditSerializer(credit)
+        return Response(serializer.data, status=status.HTTP_200_OK)

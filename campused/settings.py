@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "api.user",
+    "api.channel",
+    "api.subscriptions",
 ]
 
 MIDDLEWARE = [
@@ -68,6 +70,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "api.channel.middleware.token_usage_middleware.TokenUsageMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -135,8 +138,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),  # 1 hour
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # 1 day
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),  # 1 hour
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),  # 1 day
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
@@ -165,6 +168,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -183,6 +189,47 @@ GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 
 # OPENAI API KEY
 OPENAI_API_KEY = env("OPENAI_API_KEY")
+OPENAI_MODEL = env("OPENAI_MODEL")
 
+# Razorpay Keys
+RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET")
+RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET")
 # Frontend URL
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:420")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:4200")
+
+# Basic logging configuration: print logs to console so view loggers (logger.info/debug/etc.)
+# are visible when running the development server.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG" if DEBUG else "INFO",
+    },
+    "loggers": {
+        # Keep Django's own logs at INFO in dev unless DEBUG is true
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Your app namespace — set to DEBUG in development to surface logger.debug
+        "api": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+    },
+}

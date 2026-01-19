@@ -9,10 +9,10 @@ def convert_byte_image2base64(image_file_bytes):
     return base64.b64encode(data).decode("utf-8")
 
 
-def image_analyze(image_file_bytes):
+def image_analyze(image_file_bytes, model="gpt-4.1-mini"):
     base64_image = convert_byte_image2base64(image_file_bytes)
     res = client.responses.create(
-        model="gpt-4.1",
+        model=model,
         input=[
             {
                 "role": "user",
@@ -24,9 +24,11 @@ def image_analyze(image_file_bytes):
                     {
                         "type": "input_image",
                         "image_url": f"data:image/jpeg;base64,{base64_image}",
+                        "detail": "low",
                     },
                 ],
             }
         ],
     )
-    return res.output_text
+
+    return res.output_text, res.usage.input_tokens, res.usage.output_tokens

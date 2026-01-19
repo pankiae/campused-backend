@@ -12,6 +12,8 @@ from rest_framework_simplejwt.tokens import (
 
 from utils.auth.forgot_password import send_password_reset_email
 
+from .models import UserCredit
+
 User = get_user_model()
 
 
@@ -196,3 +198,9 @@ class ResetPasswordSerializer(serializers.Serializer):
         new_password = self.validated_data["new_password"]
         self.user.set_password(new_password)
         self.user.save()
+
+
+class UserCreditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserCredit
+        fields = ["total_tokens", "used_tokens", "remaining_tokens", "last_updated"]

@@ -6,17 +6,27 @@ import uuid
 from django.conf import settings
 from django.http import FileResponse, Http404
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.file_logic import file_loader, file_saver
-from utils.openai_logic import image_analyze, text_generation, token_calculation
+from utils.openai_logic import (
+    exam_generation,
+    image_analyze,
+    text_generation,
+    token_calculation,
+)
 
-from .models import Channel
-from .serializers import ChannelListSerializer
+from .models import Channel, Exam
+from .serializers import (
+    ChannelListSerializer,
+    ExamGetSerializer,
+    ExamListSerializer,
+    GenerateExamSerializer,
+)
 
 ALLOWED_TYPES = [
     "application/pdf",
@@ -386,3 +396,86 @@ class FileFetchView(APIView):
             return response
         except Exception as e:
             return Response({"error": f"Unable to read file: {str(e)}"}, status=500)
+
+
+class GenerateExamAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = GenerateExamSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        gather_tokens = {"input": 0, "output": 0}
+
+        try:
+            # synchronous call to generate_exam
+            questions_answers, text_input_token, text_output_token = (
+                exam_generation.ExamPrepare(
+                    exam=data["exam"],
+                    subject=data["subject"],
+                    difficulty=data["difficulty"],
+                    language=data["language"],
+                    mode=data["mode"],
+                    count=data["count"],
+                ).generate_exam()
+            )
+            print("questions_answers: \n", questions_answers)
+            gather_tokens["input"] += text_input_token
+            gather_tokens["output"] += text_output_token
+            gather_tokens_cost_sum = token_calculation.sum_input_output_token_cost(
+                select_openai_model, gather_tokens["input"], gather_tokens["output"]
+            )
+            exam = Exam.objects.create(
+                user=request.user,
+                exam=data["exam"],
+                subject=data["subject"],
+                difficulty=data["difficulty"],
+                language=data["language"],
+                mode=data["mode"],
+                questions_answers=questions_answers,
+                token_cost=gather_tokens_cost_sum,
+            )
+            logger.info(
+                "Conversation saved for user %s (messages=%d)",
+                request.user,
+                len(questions_answers),
+            )
+            request._request.gather_tokens = gather_tokens
+            request._request.gather_tokens["model"] = select_openai_model
+            return Response(
+                {
+                    "status": "completed",
+                    "exam": data["exam"],
+                    "subject": data["subject"],
+                    "difficulty": data["difficulty"],
+                    "language": data["language"],
+                    "mode": data["mode"],
+                    "count": data["count"],
+                    "questions_answers": questions_answers,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ListExamView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExamListSerializer
+
+    def get_queryset(self):
+        return Exam.objects.filter(user=self.request.user).order_by("-updated_at")
+
+
+class GetExamView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ExamGetSerializer
+
+    def get(self, request, exam_id):
+        exam = get_object_or_404(Exam, id=exam_id, user=request.user)
+        serializer = self.serializer_class(exam)
+        return Response(serializer.data)

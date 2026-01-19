@@ -45,7 +45,10 @@ CORS_ALLOWED_ORIGINS = env(
 )  # → ["http://localhost:3000", "https://creatorsparadise.ai"]
 CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS")  # → False
 CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS")  # → True or False as set in .env
-
+CSRF_TRUSTED_ORIGINS = [
+    "https://api.campused.ai",
+    # add any other host you call from, eg "https://app.campused.ai"
+]
 
 # Application definition
 
